@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shopfloor Housekeeping Tracker</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 1rem;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+      background: #f7f7f7;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    form {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-bottom: .75rem;
+      color: #555;
+    }
+    select, input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: .5rem;
+      margin-top: .25rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .tasks label {
+      display: flex;
+      align-items: center;
+      margin-bottom: .5rem;
+    }
+    .tasks input {
+      margin-right: .5rem;
+    }
+    button {
+      width: 100%;
+      padding: .75rem;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-storage-compat.js"></script>
+  <script>
+    // 🔑 Replace these values with your Firebase config exactly
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZyLBAGOJeyRDWXSPF27U7zLuWOyBP4Tw",
+      authDomain: "tac-housekeeping.firebaseapp.com",
+      projectId: "tac-housekeeping",
+      storageBucket: "tac-housekeeping.appspot.com",
+      messagingSenderId: "407676454029",
+      appId: "1:407676454029:web:0017f21f34caceb45acec4"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+  </script>
+</head>
+
+<body>
+  <h1>Housekeeping Log</h1>
+
+  <form id="housekeepingForm">
+    <label>
+      Select Zone:
+      <select id="zoneSelect" required>
+        <option value="" disabled selected>-- pick your zone --</option>
+        <option value="Zone A">Zone A – Injection Molding</option>
+        <option value="Zone B">Zone B – Assembly</option>
+        <option value="Zone C">Zone C – Packaging</option>
+        <!-- Add or edit zones here -->
+      </select>
+    </label>
+
+    <label>
+      Your Name / ID:
+      <input type="text" id="cleanerName" required placeholder="e.g. Ravi Kumar" />
+    </label>
+
+    <div class="tasks">
+      <strong>Tasks:</strong>
+      <label><input type="checkbox" id="task1" /> Floor swept</label>
+      <label><input type="checkbox" id="task2" /> Bins emptied</label>
+      <label><input type="checkbox" id="task3" /> Machines wiped</label>
+      <!-- Add more tasks as needed -->
+    </div>
+
+    <label>
+      Photo (optional):
+      <input type="file" id="photoInput" accept="image/*" />
+    </label>
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <script>
+    document.getElementById('housekeepingForm').addEventListener('submit', async e => {
+      e.preventDefault();
+
+      // Gather form data
+      const zone  = document.getElementById('zoneSelect').value;
+      const name  = document.getElementById('cleanerName').value.trim();
+      const tasks = {
+        floorSwept: document.getElementById('task1').checked,
+        binsEmptied: document.getElementById('task2').checked,
+        machinesWiped: document.getElementById('task3').checked,
+      };
+      const timestamp = new Date();
+
+      // Handle optional photo
+      let photoUrl = '';
+      const file = document.getElementById('photoInput').files[0];
+      if (file) {
+        const path = `photos/${zone}/${Date.now()}_${file.name}`;
+        const snap = await storage.ref(path).put(file);
+        photoUrl = await snap.ref.getDownloadURL();
+      }
+
+      // Write to Firestore
+      await db.collection('logs').add({ zone, name, tasks, timestamp, photoUrl });
+
+      alert(`✅ Logged for ${zone}! Thank you, ${name}.`);
+      e.target.reset();
+    });
+  </script>
+</body>
+</html>
